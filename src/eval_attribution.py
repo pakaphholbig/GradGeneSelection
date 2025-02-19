@@ -24,6 +24,10 @@ seed = 50
 np.random.seed(seed)
 torch.manual_seed(seed)
 
+import warnings
+
+warnings.simplefilter("ignore", category=UserWarning)
+
 
 @torch.no_grad()
 def attribution_analysis_wrapper(
@@ -36,7 +40,6 @@ def attribution_analysis_wrapper(
     target_phenotype: str,
     baseline_phenotype: str,
     embedding_type: str,
-    prob_phen: str,
     query: dict[str, list[str]],
     n_samples: int,
     internal_batch_size: int,
@@ -111,7 +114,6 @@ def attribution_analysis_wrapper(
             target=target,
             baseline=baseline,
             tokenizer=tokenizer,
-            prob_phen=prob_phen,
             device=device,
             two_way=two_way,
         )
@@ -119,7 +121,7 @@ def attribution_analysis_wrapper(
         attributions, delta, rev_attributions, rev_delta = attr.eval_attribution_method(
             internal_batch_size=internal_batch_size,
             masked_phenotype_category=masked_category,
-            prob_phen=prob_phen,
+            target_phen=target_phenotype,
             n_steps=n_steps,
             return_convergence=return_convergence,
         )
@@ -198,13 +200,6 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "--target_phenotype",
-        type=str,
-        required=True,
-        help="the phenotype of an input that we want to analyze (expect to be in masked_category)",
-    )
-
-    parser.add_argument(
         "--baseline_phenotype",
         type=str,
         required=True,
@@ -225,7 +220,7 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "--prob_phen",
+        "--target_phenotype",
         type=str,
         required=True,
         help="the target phenotype to calculate the attribution values from if it is 'max', we will return the highest probability across all the phenotypes. if it is 'truth', we will return probability of the ground truth label.",

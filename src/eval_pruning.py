@@ -25,6 +25,10 @@ seed = 50
 np.random.seed(seed)
 torch.manual_seed(seed)
 
+import warnings
+
+warnings.simplefilter("ignore", category=UserWarning)
+
 
 def calculate_metrics(predictions, ground_truth):
     """
@@ -71,7 +75,6 @@ def gene_pruning_wrapper(
     masked_category: str,
     target_phenotype: str,
     baseline_phenotype: str,
-    prob_phen: str,
     query: dict[str, list[str]],
     reverse: bool,
 ):
@@ -93,6 +96,8 @@ def gene_pruning_wrapper(
         "target": {p: [] for p in prune_ratios},
         "baseline": {p: [] for p in prune_ratios},
     }
+
+    hvg_importance = pd.read_csv("sample_HVG.csv")["rank"]
     for i in tqdm(range(num_data), "Gene Pruning n_data ="):
 
         row = df.loc[df["index"] == i]
@@ -133,7 +138,6 @@ def gene_pruning_wrapper(
             target=target,
             baseline=baseline,
             tokenizer=tokenizer,
-            prob_phen=prob_phen,
             device=device,
         )
 
@@ -147,6 +151,7 @@ def gene_pruning_wrapper(
                 prune_ratio=p,
                 heuristic=heuristic,
                 reverse=reverse,
+                hvg_importance=hvg_importance,
             )
             p_target_pred = attr.predict(pruned_target, masked_category)
             p_baseline_pred = attr.predict(pruned_baseline, masked_category)
@@ -255,13 +260,6 @@ if __name__ == "__main__":
         type=str,
         required=True,
         help="the phenotype of a baseline that we want to analyze (expect to be in masked_category). If the baseline is `blank`, an empty input will be used (an input with only phenotypes but no genes)",
-    )
-
-    parser.add_argument(
-        "--prob_phen",
-        type=str,
-        required=True,
-        help="the target phenotype to calculate the attribution values from if it is 'max', we will return the highest probability across all the phenotypes. if it is 'truth', we will return probability of the ground truth label.",
     )
 
     parser.add_argument(

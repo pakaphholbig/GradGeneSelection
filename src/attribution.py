@@ -5,6 +5,7 @@ from captum.attr import LayerIntegratedGradients, LayerDeepLift
 from perturbgene.data_utils.tokenization import GeneTokenizer, phenotype_to_token
 from perturbgene.model import GeneBertForPhenotypicMLM
 from perturbgene.attribution_utils import _reconstruct_input
+import pandas as pd
 
 
 # Interface
@@ -403,7 +404,11 @@ class AttributionAnalysis:
 
     @torch.no_grad()
     def gene_pruning(
-        self, prune_ratio: int, heuristic: str, reverse: Optional[bool] = False
+        self,
+        prune_ratio: int,
+        heuristic: str,
+        reverse: Optional[bool] = False,
+        hvg_importance: Optional[int] = None,
     ) -> Tuple[ModelInput, ModelInput]:
         """
         Gene Pruning Algorithm
@@ -442,6 +447,8 @@ class AttributionAnalysis:
             ), "rev_abs_one_way importance requires the reversed attributions to be initialized"
         elif heuristic == "random":
             func = random_importance
+        elif heuristic == "hvg":
+            importance = hvg_importance
         else:
             raise Exception("Invalid heuristic")
 
@@ -457,11 +464,16 @@ class AttributionAnalysis:
         else:
             rev_attr = self.rev_attribution_values[offset:-1]
 
-        importance = func(
-            self.attribution_values[offset:-1],
-            rev_attr,
-            # avoid a case where reverse attribution is not calculated
-        )
+        if heuristic == "hvg":
+            token_ref = self._blended_token_type_ref.squeeze(0)[offset:-1].cpu()
+            rank = hvg_importance.iloc[token_ref].values
+            importance = -torch.tensor(rank, device=self.device)
+        else:
+            importance = func(
+                self.attribution_values[offset:-1],
+                rev_attr,
+                # avoid a case where reverse attribution is not calculated
+            )
         if reverse:
             importance = -importance
         # negative sign refers to the opposite of disease attributions
@@ -736,6 +748,7 @@ def geometric_importance(attr1: torch.tensor, attr2: torch.tensor):
 
 
 def arithmetic_importance(attr1: torch.tensor, attr2: torch.tensor):
+    print(attr1.shape)
     return (attr1 + attr2) / 2
 
 
