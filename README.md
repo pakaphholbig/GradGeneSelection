@@ -1,3 +1,3 @@
-# Single-Cell RNA Sequencing Deep Feature Attribution (scDFA)
+# Gradient-Based Gene Selection for scRNA-seq Foundation Models
 
-This is a GitHub repository for Single-Cell RNA Sequencing Deep Feature Attribution (scDFA). We present a gene feature selection algorithm using a novel multimodal transformer trained on scRNA-seq data.
+This is a GitHub repository for Gradient-Based Gene Selection for scRNA-seq Foundation Models. We present a gene selection algorithm using a novel multimodal transformer trained on scRNA-seq data.
